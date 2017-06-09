@@ -1,7 +1,7 @@
 ####################################################
 ###          User definable stuff
 #Behavior options
-USE_MPI = yes #Use MPI parallelization? Set to "yes" or "no"
+USE_MPI = no #Use MPI parallelization? Set to "yes" or "no"
 DEFINEOPTIONS = -D_VERBOSE #Comment out for more explicit output
 DEFINEOPTIONS += -D_HAVE_OMP #Comment this out if you don't have the OpenMP headers
 #DEFINEOPTIONS += -D_DEBUG #Only used for debugging

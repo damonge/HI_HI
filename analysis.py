@@ -1,5 +1,5 @@
 import numpy as np
-import healpy as hp
+#import healpy as hp
 import matplotlib.pyplot as plt
 import os
 from mpl_toolkits.mplot3d import Axes3D
@@ -13,10 +13,10 @@ plot_stuff=False
 weight_mhi=False
 weight_fkp=False
 
-pcs=csm.PcsPar()
-pcs.set_verbosity(1)
-pcs.background_set(0.315,0.685,0.049,-1.,0.,0.67,2.725)
-h0=pcs.hubble(1.)
+#pcs=csm.PcsPar()
+#pcs.set_verbosity(1)
+#pcs.background_set(0.315,0.685,0.049,-1.,0.,0.67,2.725)
+h0=0.000333564095 #pcs.hubble(1.)
 
 #Read data
 data_d=np.genfromtxt(fname_data,skiprows=1,delimiter=',',
@@ -122,7 +122,7 @@ stout+="dim3_nbin= 20\n"
 f=open("param_cute.ini","w")
 f.write(stout)
 f.close()
-os.system("./CUTE param_cute.ini > log_cute.txt")
+os.system("./CUTEdir/CUTE/CUTE param_cute.ini > log_cute.txt")
 os.system("rm data.txt random.txt")
 os.system("cat log_cute.txt")
 
