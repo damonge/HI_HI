@@ -3,7 +3,7 @@ import healpy as hp
 import matplotlib.pyplot as plt
 import os
 from mpl_toolkits.mplot3d import Axes3D
-import py_cosmo_mad as csm
+#import py_cosmo_mad as csm
 
 fname_data="data/data_cat_mhithresh7.5.csv"
 fname_rand="data/rand_cat_mhithresh7.5.csv"
