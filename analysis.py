@@ -11,7 +11,7 @@ dtor=np.pi/180
 clight=299792.458
 plot_stuff=False
 weight_mhi=False
-weight_fkp=False
+weight_fkp=True
 
 #pcs=csm.PcsPar()
 #pcs.set_verbosity(1)
