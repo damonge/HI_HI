@@ -1,0 +1,52 @@
+
+-----------------------------------------------------------
+|| CUTE - Correlation Utilities and Two-point Estimation ||
+-----------------------------------------------------------
+
+Using 20 threads 
+
+*** Reading run parameters 
+
+*** Setting z-distance relation from the cosmology:
+ - Omega_M = 0.315 
+ - Omega_L = 0.685 
+ - w       = -1.000   
+
+*** 3D correlation function (pi,sigma): 
+ - Range: (0.000,0.000) < (pi,sigma) < (60.000,20.000) Mpc/h
+ - #bins: (60,20)
+ - Resolution: d(pi) = 1.000 Mpc/h
+   Log. binning in sigma with 0 bins per decade
+ - Using a brute-force approach 
+
+*** Reading catalog from file data_84.txt
+  6123 lines in the catalog
+  The average redshift is 0.025321
+  Effective n. of particles: 41.852824
+
+*** Reading catalog from file random.txt
+  365172 lines in the catalog
+  The average redshift is 0.026196
+  Effective n. of particles: 2670.892869
+
+*** Boxing catalogs 
+  There will be (10,14,3) = 420 boxes in total
+  Boxes will be (dx,dy,dz) = (14.629,15.790,15.541) 
+  There are objects in 207 out of 420 boxes 
+  There are objects in 257 out of 420 boxes 
+
+*** Correlating 
+ - D-D 
+Node 0 : 207 iters, will take from 0 to 207
+    Relative time ellapsed 46.9 ms
+ - D-R 
+Node 0 : 207 iters, will take from 0 to 207
+    Relative time ellapsed 5898.1 ms
+ - R-R 
+Node 0 : 257 iters, will take from 0 to 257
+    Relative time ellapsed 99470.9 ms
+
+*** Writing output file corr_3D_ps_highres_nbin60_fkp_84.txt 
+
+*** Cleaning up
+             Done !!!             
