@@ -1,0 +1,22 @@
+flushing filesystem cache on all nodes...
+cn01-13 : flushing filesystem cache...
+cn01-13 : filesystem cache flushed
+loading dependency python/2.7.8/gnu/4.9.2
+loading dependency gnu/4.9.2
+loading dependency intel/14.0
+loading dependency mkl/11.1
+loading dependency gnu/4.9.2
+loading dependency numactl/2.0.10
+loading dependency hwloc/1.10.0
+Traceback (most recent call last):
+  File "analysis_2D_bootstrap.py", line 24, in <module>
+    names=('agc','ra','dec','v50','verr','vcmb','logMHI'))
+  File "/u/shared/programs/x86_64/numpy/1.9.1/intel/14.0/mkl/11.1/python/2.7.8/lib/python2.7/site-packages/numpy/lib/npyio.py", line 1360, in genfromtxt
+    fhd = iter(np.lib._datasource.open(fname, 'rbU'))
+  File "/u/shared/programs/x86_64/numpy/1.9.1/intel/14.0/mkl/11.1/python/2.7.8/lib/python2.7/site-packages/numpy/lib/_datasource.py", line 151, in open
+    return ds.open(path, mode)
+  File "/u/shared/programs/x86_64/numpy/1.9.1/intel/14.0/mkl/11.1/python/2.7.8/lib/python2.7/site-packages/numpy/lib/_datasource.py", line 501, in open
+    raise IOError("%s not found." % path)
+IOError: data/data_cat_mhithresh7.5.csv not found.
+cn01-13 : flushing filesystem cache...
+cn01-13 : filesystem cache flushed
