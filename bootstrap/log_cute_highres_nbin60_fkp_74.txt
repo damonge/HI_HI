@@ -44,3 +44,9 @@ Node 0 : 208 iters, will take from 0 to 208
     Relative time ellapsed 6062.7 ms
  - R-R 
 Node 0 : 257 iters, will take from 0 to 257
+    Relative time ellapsed 99198.7 ms
+
+*** Writing output file corr_3D_ps_highres_nbin60_fkp_74.txt 
+
+*** Cleaning up
+             Done !!!             
