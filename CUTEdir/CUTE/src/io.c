@@ -608,6 +608,10 @@ void read_run_params(char *fname)
   // Reads and checks the parameter file
   FILE *fi;
   int n_lin,ii;
+  
+  //J3 stuff
+  double r0=5.,gamma=1.8;
+
   Binner binner;
   binner.dim1_max=-1;
   binner.dim1_min=-1;
@@ -692,12 +696,50 @@ void read_run_params(char *fname)
       n_side_cth=atoi(s2);
       n_side_phi=2*n_side_cth;
     }
+    else if(!strcmp(s1,"do_j3="))
+      do_j3=atoi(s2);
+    else if(!strcmp(s1,"j3_gamma="))
+      gamma=atof(s2);
+    else if(!strcmp(s1,"j3_r0="))
+      gamma=atof(s2);
+    else if(!strcmp(s1,"j3_ndens_file="))
+      sprintf(fname_j3_ndens,"%s",s2);
     else
       fprintf(stderr,"CUTE: Unknown parameter %s\n",s1);
   }
   fclose(fi);
 
   process_binner(binner);
+
+  if(do_j3) {
+    j3_inv_denom=4*M_PI*pow(r0,gamma)/(3-gamma);
+    j3_3_m_gamma_half=0.5*(3-gamma);
+    fi=fopen(fname_j3_ndens,"r");
+
+    double *rarr;
+    if(fi==NULL) error_open_file(fname_j3_ndens);
+    nr_j3_ndens=linecount(fi);
+    rewind(fi);
+    rarr=my_malloc(nr_j3_ndens*sizeof(double));
+    ndens_j3_arr=my_malloc(nr_j3_ndens*sizeof(double));
+    for(ii=0;ii<nr_j3_ndens;ii++) {
+      int stat=fscanf(fi,"%lf %lf",&(rarr[ii]),&(ndens_j3_arr[ii]));
+      if(stat!=2)
+	error_read_line(fname_j3_ndens,ii+1);
+    }
+    fclose(fi);
+    inv_dr_j3_ndens=rarr[1]-rarr[0];
+    if(fabs(rarr[2]-rarr[1]-inv_dr_j3_ndens)>1E-3) {
+      fprintf(stderr,"N(z) file should be equi-spaced in r\n");
+      exit(1);
+    }
+    inv_dr_j3_ndens=1./inv_dr_j3_ndens;
+    r0_j3_ndens=rarr[0];
+    rf_j3_ndens=rarr[nr_j3_ndens-1];
+    n0_j3_ndens=ndens_j3_arr[0];
+    nf_j3_ndens=ndens_j3_arr[nr_j3_ndens-1];
+    free(rarr);
+  }
 
   if(strcmp(fnameData2,"file_none") || strcmp(fnameRandom2,"file_none"))
     use_two_catalogs=1;

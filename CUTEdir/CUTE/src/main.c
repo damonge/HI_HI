@@ -1038,6 +1038,9 @@ int main(int argc,char **argv)
   }
   print_info("             Done !!!             \n");
 
+  if(do_j3)
+    free(ndens_j3_arr);
+
 #ifdef _HAVE_MPI
   MPI_Finalize();
 #endif //_HAVE_MPI

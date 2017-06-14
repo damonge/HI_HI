@@ -86,5 +86,19 @@ int n_side_cth,n_side_phi,n_boxes2D;
 //3D boxing variables
 int n_side[3],n_boxes3D;
 double l_box[3];
+
+//J3 stuff
+int do_j3=0;
+double j3_inv_denom=189.65;
+double j3_3_m_gamma_half=0.6;
+char fname_j3_ndens[256]="file_none";
+double r0_j3_ndens=-1;
+double rf_j3_ndens=-1;
+double n0_j3_ndens=-1;
+double nf_j3_ndens=-1;
+double inv_dr_j3_ndens=-1;
+int nr_j3_ndens=-1;
+double *ndens_j3_arr=NULL;
+
 ///
 ////////////////////////////////////////

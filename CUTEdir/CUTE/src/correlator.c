@@ -1252,20 +1252,59 @@ void corr_ang_twocat_pm(Cell2D *cellsD1,Cell2D *cellsD2,Cell2D *cellsR1,Cell2D *
   free(ipix_full);
 }
 
+static double **get_ndens_j3(Box3D *boxes)
+{
+  int i;
+  int nboxes=n_side[0]*n_side[1]*n_side[2];
+  double **nd_boxes=my_malloc(nboxes*sizeof(double *));
+  for(i=0;i<nboxes;i++) {
+    int j;
+    int np1=boxes[i].np;
+    if(np1>0) {
+      nd_boxes[i]=my_malloc(np1*sizeof(double));
+      for(j=0;j<np1;j++) {
+	double *p=&(boxes[i].pos[N_POS*j]);
+	double r=sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
+	nd_boxes[i][j]=j3_ndens(r);
+      }
+    }
+  }
+
+  return nd_boxes;
+}
+
+static void free_ndens_j3(double **nd_boxes)
+{
+  int i;
+  int nboxes=n_side[0]*n_side[1]*n_side[2];
+  for(i=0;i<nboxes;i++)
+    free(nd_boxes[i]);
+  free(nd_boxes);
+}
+
+static double j3_factor(double r2)
+{
+  return j3_inv_denom*pow(r2,j3_3_m_gamma_half);
+}
+
 void auto_mono_bf(int nbox_full,int *indices,Box3D *boxes,
 		  histo_t *hh)
 {
   //////
   // Monopole auto-correlator
   int i,ibox_0,ibox_f;
+  double **nd_boxes;
   share_iters(nbox_full,&ibox_0,&ibox_f);
 
   for(i=0;i<nb_r;i++) 
     hh[i]=0;
 
+  if(do_j3)
+    nd_boxes=get_ndens_j3(boxes);
+
 #pragma omp parallel default(none)			\
   shared(nbox_full,indices,boxes,hh,n_side,l_box)	\
-  shared(i_r_max,nb_r,ibox_0,ibox_f)
+  shared(i_r_max,nb_r,ibox_0,ibox_f,nd_boxes,do_j3)
   {
     int j;
     histo_t *hthread=(histo_t *)my_calloc(nb_r,sizeof(histo_t));
@@ -1311,7 +1350,12 @@ void auto_mono_bf(int nbox_full,int *indices,Box3D *boxes,
 	    int ir=r2bin(r2);
 	    if((ir<nb_r)&&(ir>=0)) {
 #ifdef _WITH_WEIGHTS
-	      hthread[ir]+=pos1[3]*pos2[3];
+	      double w=pos1[3]*pos2[3];
+	      if(do_j3) {
+		double j3=j3_factor(r2);
+		w*=1./((1+nd_boxes[ip1][ii]*j3)*(1+nd_boxes[ip1][jj]*j3));
+	      }
+	      hthread[ir]+=w;
 #else //_WITH_WEIGHTS
 	      hthread[ir]++;
 #endif //_WITH_WEIGHTS
@@ -1343,7 +1387,12 @@ void auto_mono_bf(int nbox_full,int *indices,Box3D *boxes,
 		      int ir=r2bin(r2);
 		      if((ir<nb_r)&&(ir>=0)) {
 #ifdef _WITH_WEIGHTS
-			hthread[ir]+=pos1[3]*pos2[3];
+			double w=pos1[3]*pos2[3];
+			if(do_j3) {
+			  double j3=j3_factor(r2);
+			  w*=1./((1+nd_boxes[ip1][ii]*j3)*(1+nd_boxes[ip2][jj]*j3));
+			}
+			hthread[ir]+=w;
 #else //_WITH_WEIGHTS
 			hthread[ir]++;
 #endif //_WITH_WEIGHTS
@@ -1366,6 +1415,9 @@ void auto_mono_bf(int nbox_full,int *indices,Box3D *boxes,
 
     free(hthread);
   } //end omp parallel
+
+  if(do_j3)
+    free_ndens_j3(nd_boxes);
 }
 
 void cross_mono_bf(int nbox_full,int *indices,
@@ -1375,14 +1427,20 @@ void cross_mono_bf(int nbox_full,int *indices,
   //////
   // Monopole cross-correlator
   int i,ibox_0,ibox_f;
+  double **nd_boxes1,**nd_boxes2;
   share_iters(nbox_full,&ibox_0,&ibox_f);
 
   for(i=0;i<nb_r;i++) 
     hh[i]=0;
 
+  if(do_j3) {
+    nd_boxes1=get_ndens_j3(boxes1);
+    nd_boxes2=get_ndens_j3(boxes2);
+  }
+
 #pragma omp parallel default(none)				\
   shared(nbox_full,indices,boxes1,boxes2,hh,n_side,l_box)	\
-  shared(nb_r,i_r_max,ibox_0,ibox_f)
+  shared(nb_r,i_r_max,ibox_0,ibox_f,nd_boxes1,nd_boxes2,do_j3)
   {
     int j;
     histo_t *hthread=(histo_t *)my_calloc(nb_r,sizeof(histo_t));
@@ -1438,7 +1496,12 @@ void cross_mono_bf(int nbox_full,int *indices,
 		    int ir=r2bin(r2);
 		    if((ir<nb_r)&&(ir>=0)) {
 #ifdef _WITH_WEIGHTS
-		      hthread[ir]+=pos1[3]*pos2[3];
+		      double w=pos1[3]*pos2[3];
+		      if(do_j3) {
+			double j3=j3_factor(r2);
+			w*=1./((1+nd_boxes1[ip1][ii]*j3)*(1+nd_boxes2[ip2][jj]*j3));
+		      }
+		      hthread[ir]+=w;
 #else //_WITH_WEIGHTS
 		      hthread[ir]++;
 #endif //_WITH_WEIGHTS
@@ -1460,6 +1523,11 @@ void cross_mono_bf(int nbox_full,int *indices,
 
     free(hthread);
   } //end omp parallel
+
+  if(do_j3) {
+    free_ndens_j3(nd_boxes1);
+    free_ndens_j3(nd_boxes2);
+  }
 }
 
 void auto_3d_ps_bf(int nbox_full,int *indices,Box3D *boxes,
@@ -1468,13 +1536,17 @@ void auto_3d_ps_bf(int nbox_full,int *indices,Box3D *boxes,
   //////
   // Monopole auto-correlator
   int i,ibox_0,ibox_f;
+  double **nd_boxes;
   share_iters(nbox_full,&ibox_0,&ibox_f);
 
   for(i=0;i<nb_rl*nb_rt;i++) 
     hh[i]=0;
 
+  if(do_j3)
+    nd_boxes=get_ndens_j3(boxes);
+
 #pragma omp parallel default(none)					\
-  shared(nbox_full,indices,boxes,hh,n_side,l_box)			\
+  shared(nbox_full,indices,boxes,hh,n_side,l_box,nd_boxes,do_j3)	\
   shared(log_rt_max,i_rt_max,nb_rt,i_rl_max,nb_rl,ibox_0,ibox_f)
   {
     int j;
@@ -1531,7 +1603,12 @@ void auto_3d_ps_bf(int nbox_full,int *indices,Box3D *boxes,
 		int irt=rt2bin(rt2);
 		if((irt<nb_rt)&&(irt>=0)) {
 #ifdef _WITH_WEIGHTS
-		  hthread[irl+nb_rl*irt]+=pos1[3]*pos2[3];
+		  double w=pos1[3]*pos2[3];
+		  if(do_j3) {
+		    double j3=j3_factor(r2);
+		    w*=1./((1+nd_boxes[ip1][ii]*j3)*(1+nd_boxes[ip1][jj]*j3));
+		  }
+		  hthread[irl+nb_rl*irt]+=w;
 #else //_WITH_WEIGHTS
 		  hthread[irl+nb_rl*irt]++;
 #endif //_WITH_WEIGHTS
@@ -1574,7 +1651,12 @@ void auto_3d_ps_bf(int nbox_full,int *indices,Box3D *boxes,
 			  int irt=rt2bin(rt2);
 			  if((irt<nb_rt)&&(irt>=0)) {
 #ifdef _WITH_WEIGHTS
-			    hthread[irl+nb_rl*irt]+=pos1[3]*pos2[3];
+			    double w=pos1[3]*pos2[3];
+			    if(do_j3) {
+			      double j3=j3_factor(r2);
+			      w*=1./((1+nd_boxes[ip1][ii]*j3)*(1+nd_boxes[ip2][jj]*j3));
+			    }
+			    hthread[irl+nb_rl*irt]+=w;
 #else //_WITH_WEIGHTS
 			    hthread[irl+nb_rl*irt]++;
 #endif //_WITH_WEIGHTS
@@ -1599,6 +1681,9 @@ void auto_3d_ps_bf(int nbox_full,int *indices,Box3D *boxes,
 
     free(hthread);
   } //end omp parallel
+
+  if(do_j3)
+    free_ndens_j3(nd_boxes);
 }
 
 void cross_3d_ps_bf(int nbox_full,int *indices,
@@ -1608,14 +1693,21 @@ void cross_3d_ps_bf(int nbox_full,int *indices,
   //////
   // Monopole auto-correlator
   int i,ibox_0,ibox_f;
+  double **nd_boxes1,**nd_boxes2;
   share_iters(nbox_full,&ibox_0,&ibox_f);
 
   for(i=0;i<nb_rl*nb_rt;i++) 
     hh[i]=0;
 
+  if(do_j3) {
+    nd_boxes1=get_ndens_j3(boxes1);
+    nd_boxes2=get_ndens_j3(boxes2);
+  }
+
 #pragma omp parallel default(none)					\
   shared(nbox_full,indices,boxes1,boxes2,hh,n_side,l_box)		\
-  shared(log_rt_max,i_rt_max,nb_rt,i_rl_max,nb_rl,ibox_0,ibox_f)
+  shared(log_rt_max,i_rt_max,nb_rt,i_rl_max,nb_rl,ibox_0,ibox_f)	\
+  shared(do_j3,nd_boxes1,nd_boxes2)
   {
     int j;
     histo_t *hthread=(histo_t *)my_calloc(nb_rl*nb_rt,sizeof(histo_t));
@@ -1681,7 +1773,12 @@ void cross_3d_ps_bf(int nbox_full,int *indices,
 			int irt=rt2bin(rt2);
 			if((irt<nb_rt)&&(irt>=0)) {
 #ifdef _WITH_WEIGHTS
-			  hthread[irl+nb_rl*irt]+=pos1[3]*pos2[3];
+			  double w=pos1[3]*pos2[3];
+			  if(do_j3) {
+			    double j3=j3_factor(r2);
+			    w*=1./((1+nd_boxes1[ip1][ii]*j3)*(1+nd_boxes2[ip2][jj]*j3));
+			  }
+			  hthread[irl+nb_rl*irt]+=w;
 #else //_WITH_WEIGHTS
 			  hthread[irl+nb_rl*irt]++;
 #endif //_WITH_WEIGHTS
@@ -1705,6 +1802,11 @@ void cross_3d_ps_bf(int nbox_full,int *indices,
 
     free(hthread);
   } //end omp parallel
+
+  if(do_j3) {
+    free_ndens_j3(nd_boxes1);
+    free_ndens_j3(nd_boxes2);
+  }
 }
 
 void auto_3d_rm_bf(int nbox_full,int *indices,Box3D *boxes,
@@ -1713,14 +1815,18 @@ void auto_3d_rm_bf(int nbox_full,int *indices,Box3D *boxes,
   //////
   // Monopole auto-correlator
   int i,ibox_0,ibox_f;
+  double **nd_boxes;
   share_iters(nbox_full,&ibox_0,&ibox_f);
 
   for(i=0;i<nb_r*nb_mu;i++) 
     hh[i]=0;
 
+  if(do_j3)
+    nd_boxes=get_ndens_j3(boxes);
+
 #pragma omp parallel default(none)			\
-  shared(nbox_full,indices,boxes,hh,n_side,l_box)	\
-  shared(i_r_max,nb_r,nb_mu,ibox_0,ibox_f)
+  shared(nbox_full,indices,boxes,hh,n_side,l_box,do_j3)	\
+  shared(i_r_max,nb_r,nb_mu,ibox_0,ibox_f,nd_boxes)
   {
     int j;
     histo_t *hthread=(histo_t *)my_calloc(nb_r*nb_mu,sizeof(histo_t));
@@ -1777,7 +1883,12 @@ void auto_3d_rm_bf(int nbox_full,int *indices,Box3D *boxes,
 	      }
 	      if((icth<nb_mu)&&(icth>=0)) {
 #ifdef _WITH_WEIGHTS
-		hthread[icth+nb_mu*ir]+=pos1[3]*pos2[3];
+		double w=pos1[3]*pos2[3];
+		if(do_j3) {
+		  double j3=j3_factor(r2);
+		  w*=1./((1+nd_boxes[ip1][ii]*j3)*(1+nd_boxes[ip1][jj]*j3));
+		}
+		hthread[icth+nb_mu*ir]+=w;
 #else //_WITH_WEIGHTS
 		hthread[icth+nb_mu*ir]++;
 #endif //_WITH_WEIGHTS
@@ -1821,7 +1932,12 @@ void auto_3d_rm_bf(int nbox_full,int *indices,Box3D *boxes,
 			}
 			if((icth<nb_mu)&&(icth>=0)) {
 #ifdef _WITH_WEIGHTS
-			  hthread[icth+nb_mu*ir]+=pos1[3]*pos2[3];
+			  double w=pos1[3]*pos2[3];
+			  if(do_j3) {
+			    double j3=j3_factor(r2);
+			    w*=1./((1+nd_boxes[ip1][ii]*j3)*(1+nd_boxes[ip2][jj]*j3));
+			  }
+			  hthread[icth+nb_mu*ir]+=w;
 #else //_WITH_WEIGHTS
 			  hthread[icth+nb_mu*ir]++;
 #endif //_WITH_WEIGHTS
@@ -1845,6 +1961,9 @@ void auto_3d_rm_bf(int nbox_full,int *indices,Box3D *boxes,
 
     free(hthread);
   } //end omp parallel
+
+  if(do_j3)
+    free_ndens_j3(nd_boxes);
 }
 
 void cross_3d_rm_bf(int nbox_full,int *indices,
@@ -1854,14 +1973,20 @@ void cross_3d_rm_bf(int nbox_full,int *indices,
   //////
   // Monopole auto-correlator
   int i,ibox_0,ibox_f;
+  double **nd_boxes1,**nd_boxes2;
   share_iters(nbox_full,&ibox_0,&ibox_f);
 
   for(i=0;i<nb_r*nb_mu;i++) 
     hh[i]=0;
 
+  if(do_j3) {
+    nd_boxes1=get_ndens_j3(boxes1);
+    nd_boxes2=get_ndens_j3(boxes2);
+  }
+
 #pragma omp parallel default(none)				\
-  shared(nbox_full,indices,boxes1,boxes2,hh,n_side,l_box)	\
-  shared(nb_r,nb_mu,i_r_max,ibox_0,ibox_f)
+  shared(nbox_full,indices,boxes1,boxes2,hh,n_side,l_box,do_j3)	\
+  shared(nb_r,nb_mu,i_r_max,ibox_0,ibox_f,nd_boxes1,nd_boxes2)
   {
     int j;
     histo_t *hthread=(histo_t *)my_calloc(nb_r*nb_mu,sizeof(histo_t));
@@ -1928,7 +2053,12 @@ void cross_3d_rm_bf(int nbox_full,int *indices,
 		      }
 		      if((icth<nb_mu)&&(icth>=0)) {
 #ifdef _WITH_WEIGHTS
-			hthread[icth+nb_mu*ir]+=pos1[3]*pos2[3];
+			double w=pos1[3]*pos2[3];
+			if(do_j3) {
+			  double j3=j3_factor(r2);
+			  w*=1./((1+nd_boxes1[ip1][ii]*j3)*(1+nd_boxes2[ip2][jj]*j3));
+			}
+			hthread[icth+nb_mu*ir]+=w;
 #else //_WITH_WEIGHTS
 			hthread[icth+nb_mu*ir]++;
 #endif //_WITH_WEIGHTS
@@ -1951,4 +2081,9 @@ void cross_3d_rm_bf(int nbox_full,int *indices,
 
     free(hthread);
   } //end omp parallel
+
+  if(do_j3) {
+    free_ndens_j3(nd_boxes1);
+    free_ndens_j3(nd_boxes2);
+  }
 }

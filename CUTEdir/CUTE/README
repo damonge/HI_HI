@@ -132,6 +132,20 @@ Several files are needed in any CUTE run:
               The sphere will be divided in 2 x n_pix_sph^2 pixels. Only
 	      relevant for the angular correlation function with pixelization.
               See section 8 below.
+    * do_j3= INT
+              Set to 1 (0) if you want (don't want) to use J3 weights in the computation
+	      of the monopol3, 3D_ps or 3D_rm correlation functions.
+    * j3_gamma= FLOAT
+              Tilt of the correlation function that the code should assume when computing
+	      J3 weights. CUTE assumes a power-law correlation function of the form
+	      xi(r) = (r/r0)^gamma (see r0 below)
+    * j3_r0= FLOAT
+              Correlation length that the code should assume when computing J3 weights.
+    * j3_ndens_file= FILENAME
+              Name of ascii file containing the number density of sources to be assumed
+	      in the computation of J3 weights. The file should contain two columns: r, n(r),
+	      with r in units of Mpc/h and n(r) in units of (Mpc/h)^-3. The values of r
+	      should be equispaced.
     
     Any blank line or any line starting with the character '#' in the
     parameter file will be ignored. An example of this file is provided with

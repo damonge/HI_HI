@@ -71,6 +71,18 @@ extern int n_side[3];
 extern int n_boxes3D;
 extern double l_box[3];
 
+extern int do_j3;
+extern double j3_inv_denom;
+extern double j3_3_m_gamma_half;
+extern char fname_j3_ndens[256];
+extern double r0_j3_ndens;
+extern double rf_j3_ndens;
+extern double n0_j3_ndens;
+extern double nf_j3_ndens;
+extern double inv_dr_j3_ndens;
+extern int nr_j3_ndens;
+extern double *ndens_j3_arr;
+
 /*                MACROS            */
 // Other possible macros
 //_DEBUG, _VERBOSE, _TRUE_ACOS

@@ -42,6 +42,18 @@ static time_t relbeg,relend,absbeg,absend;
 int NodeThis=0;
 int NNodes=1;
 
+double j3_ndens(double r)
+{
+  if(r<r0_j3_ndens) return n0_j3_ndens;
+  else if(r>=rf_j3_ndens) return nf_j3_ndens;
+  else {
+    double u=(r-r0_j3_ndens)*inv_dr_j3_ndens;
+    int ir=(int)(u);
+    
+    return ndens_j3_arr[ir]+(ndens_j3_arr[ir+1]-ndens_j3_arr[ir])*(u-ir);
+  }
+}
+
 void mpi_init(int* p_argc,char*** p_argv)
 {
 #ifdef _HAVE_MPI

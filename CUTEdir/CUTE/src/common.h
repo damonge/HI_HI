@@ -29,6 +29,8 @@ void mpi_init(int* p_argc,char*** p_argv);
 void share_iters(int n_iters,int *iter0,int *niter_this);
 
 //General-purpose functions
+double j3_ndens(double r);
+
 void print_info(char *fmt,...);
 
 void *my_malloc(size_t size);
