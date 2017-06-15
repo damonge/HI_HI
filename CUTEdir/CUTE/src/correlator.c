@@ -1273,12 +1273,14 @@ static double **get_ndens_j3(Box3D *boxes)
   return nd_boxes;
 }
 
-static void free_ndens_j3(double **nd_boxes)
+static void free_ndens_j3(double **nd_boxes,Box3D *boxes)
 {
   int i;
   int nboxes=n_side[0]*n_side[1]*n_side[2];
-  for(i=0;i<nboxes;i++)
-    free(nd_boxes[i]);
+  for(i=0;i<nboxes;i++) {
+    if(boxes[i].np>0)
+      free(nd_boxes[i]);
+  }
   free(nd_boxes);
 }
 
@@ -1417,7 +1419,7 @@ void auto_mono_bf(int nbox_full,int *indices,Box3D *boxes,
   } //end omp parallel
 
   if(do_j3)
-    free_ndens_j3(nd_boxes);
+    free_ndens_j3(nd_boxes,boxes);
 }
 
 void cross_mono_bf(int nbox_full,int *indices,
@@ -1525,8 +1527,8 @@ void cross_mono_bf(int nbox_full,int *indices,
   } //end omp parallel
 
   if(do_j3) {
-    free_ndens_j3(nd_boxes1);
-    free_ndens_j3(nd_boxes2);
+    free_ndens_j3(nd_boxes1,boxes1);
+    free_ndens_j3(nd_boxes2,boxes2);
   }
 }
 
@@ -1683,7 +1685,7 @@ void auto_3d_ps_bf(int nbox_full,int *indices,Box3D *boxes,
   } //end omp parallel
 
   if(do_j3)
-    free_ndens_j3(nd_boxes);
+    free_ndens_j3(nd_boxes,boxes);
 }
 
 void cross_3d_ps_bf(int nbox_full,int *indices,
@@ -1804,8 +1806,8 @@ void cross_3d_ps_bf(int nbox_full,int *indices,
   } //end omp parallel
 
   if(do_j3) {
-    free_ndens_j3(nd_boxes1);
-    free_ndens_j3(nd_boxes2);
+    free_ndens_j3(nd_boxes1,boxes1);
+    free_ndens_j3(nd_boxes2,boxes2);
   }
 }
 
@@ -1963,7 +1965,7 @@ void auto_3d_rm_bf(int nbox_full,int *indices,Box3D *boxes,
   } //end omp parallel
 
   if(do_j3)
-    free_ndens_j3(nd_boxes);
+    free_ndens_j3(nd_boxes,boxes);
 }
 
 void cross_3d_rm_bf(int nbox_full,int *indices,
@@ -2083,7 +2085,7 @@ void cross_3d_rm_bf(int nbox_full,int *indices,
   } //end omp parallel
 
   if(do_j3) {
-    free_ndens_j3(nd_boxes1);
-    free_ndens_j3(nd_boxes2);
+    free_ndens_j3(nd_boxes1,boxes1);
+    free_ndens_j3(nd_boxes2,boxes2);
   }
 }
