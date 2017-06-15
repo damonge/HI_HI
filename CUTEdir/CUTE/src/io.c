@@ -701,7 +701,7 @@ void read_run_params(char *fname)
     else if(!strcmp(s1,"j3_gamma="))
       gamma=atof(s2);
     else if(!strcmp(s1,"j3_r0="))
-      gamma=atof(s2);
+      r0=atof(s2);
     else if(!strcmp(s1,"j3_ndens_file="))
       sprintf(fname_j3_ndens,"%s",s2);
     else

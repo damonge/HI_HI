@@ -1284,9 +1284,13 @@ static void free_ndens_j3(double **nd_boxes,Box3D *boxes)
   free(nd_boxes);
 }
 
+#define R2_MAX_J3 900.
 static double j3_factor(double r2)
 {
-  return j3_inv_denom*pow(r2,j3_3_m_gamma_half);
+  if(r2>R2_MAX_J3) 
+    return j3_inv_denom*pow(R2_MAX_J3,j3_3_m_gamma_half);
+  else
+    return j3_inv_denom*pow(r2,j3_3_m_gamma_half);
 }
 
 void auto_mono_bf(int nbox_full,int *indices,Box3D *boxes,
