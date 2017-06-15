@@ -51,15 +51,28 @@ zarr = (z_b[1:]+z_b[:-1])/2
 rarr = (rb[1:]+rb[:-1])/2.
 w_d = np.ones_like(z_d)
 w_r = np.ones_like(z_r)
-#Run CUTE
+
 np.savetxt("data.txt",np.transpose([z_d,np.cos(th_d),phi_d,w_d]))
 np.savetxt("random.txt",np.transpose([z_r,np.cos(th_r),phi_r,w_r]))
-np.savetxt('nr.txt',np.transpose([rarr,hd_z/vol]))
 
+# np.savetxt('nr_data.txt',np.transpose([rarr,hd_z/vol]))
+# np.savetxt('nr_random.txt',np.transpose([rarr,nfrac*h_z/vol]))
+np.savetxt('nr_fit.txt',np.transpose([rarr,nz_fit(zarr)]))
+
+# plt.plot(rarr,hd_z/vol, label = 'data')
+# plt.plot(rarr,nfrac*h_z/vol, label = 'random')
+# plt.plot(rarr,nz_fit(zarr),label = 'fit')
+# plt.yscale('log')
+# plt.xlabel('$r\,[h^{-1}\,{\\rm Mpc}]$',fontsize=20)
+# plt.ylabel('$n(r)\\,[({\\rm Mpc/h})^{-3}]$',fontsize=20)
+# plt.legend(loc=0)
+# plt.savefig('nr.pdf')
+
+#Run CUTE
 stout= "data_filename= data.txt\n"
 stout+="random_filename= random.txt\n"
 stout+="input_format= 0\n"
-stout+="output_filename= corr_3D_ps_nbin60_proper_fkp.txt\n"
+stout+="output_filename= corr_3D_ps_nbin60_proper_fkp_nfit_1p51_3p3.txt\n"
 stout+="omega_M= 0.315\n"
 stout+="omega_L= 0.685\n"
 stout+="w= -1.\n"
@@ -74,12 +87,12 @@ stout+="dim3_max= 20.\n"
 stout+="dim3_min= 0.\n"
 stout+="dim3_nbin= 20\n"
 stout+="do_j3= 1\n"
-stout+="j3_gamma= 1.5\n"
-stout+="j3_r0= 3.4\n"
-stout+="j3_ndens_file= nr.txt\n"
-f=open("param_cute_highres_nbin60_proper_fkp.ini","w")
+stout+="j3_gamma= 1.51\n"
+stout+="j3_r0= 3.3\n"
+stout+="j3_ndens_file= nr_fit.txt\n"
+f=open("param_cute_highres_nbin60_proper_fkp_nfit_1p51_3p3.ini","w")
 f.write(stout)
 f.close()
-os.system("./CUTEdir/CUTE/CUTE param_cute_highres_nbin60_proper_fkp.ini > log_cute_highres_nbin60_proper_fkp.txt")
-# os.system("rm data.txt random.txt")
-os.system("cat log_cute_highres_nbin60_proper_fkp.txt")
+os.system("./CUTEdir/CUTE/CUTE param_cute_highres_nbin60_proper_fkp_nfit_1p51_3p3.ini > log_cute_highres_nbin60_proper_fkp_nfit_1p51_3p3.txt")
+os.system("rm data.txt random.txt")
+os.system("cat log_cute_highres_nbin60_proper_fkp_nfit_1p51_3p3.txt")
