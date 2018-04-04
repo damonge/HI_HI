@@ -51,8 +51,15 @@ def get_mfunc(m_arr,w_arr,d_arr,v_survey,
     else :
         fcomp=det_test_code12
 
+    #Use only sources above completeness limit
+    good_comp=fcomp(m_arr,w_arr,d_arr)>0
+    m_arr_use=m_arr[good_comp]
+    w_arr_use=w_arr[good_comp]
+    d_arr_use=d_arr[good_comp]
+
     #Number counts and bin edges
-    ncounts2d,m_bins,w_bins=np.histogram2d(m_arr,w_arr,range=[m_range,w_range],bins=[m_nbins,w_nbins])
+    ncounts2d,m_bins,w_bins=np.histogram2d(m_arr_use,w_arr_use,range=[m_range,w_range],
+                                           bins=[m_nbins,w_nbins])
     ncounts1d=np.sum(ncounts2d,axis=1)+0.
     ncounts2d=ncounts2d.flatten()+0.
     m_delt=m_bins[1]-m_bins[0]
@@ -63,9 +70,9 @@ def get_mfunc(m_arr,w_arr,d_arr,v_survey,
     w_res=w_bins[0]+(w_bins[-1]-w_bins[0])*(np.arange(w_nbins*w_rs)+0.5)/(w_nbins*w_rs)
     m_res=m_bins[0]+(m_bins[-1]-m_bins[0])*(np.arange(m_nbins*m_rs)+0.5)/(m_nbins*m_rs)
     h3d_rs=fcomp(m_res[:,None,None]*np.ones(w_nbins*w_rs)[None,:,None],
-                 w_res[None,:,None]*np.ones(m_nbins*m_rs)[:,None,None],d_arr[None,:])
-    h3d=np.mean(h3d_rs.reshape([m_nbins,m_rs,w_nbins,w_rs,len(d_arr)]),
-                axis=(1,3)).reshape([m_nbins*w_nbins,len(d_arr)])
+                 w_res[None,:,None]*np.ones(m_nbins*m_rs)[:,None,None],d_arr_use[None,:])
+    h3d=np.mean(h3d_rs.reshape([m_nbins,m_rs,w_nbins,w_rs,len(d_arr_use)]),
+                axis=(1,3)).reshape([m_nbins*w_nbins,len(d_arr_use)])
 
     #Start iterative process
     resid=1.; i_iter=0;
@@ -98,7 +105,7 @@ def get_mfunc(m_arr,w_arr,d_arr,v_survey,
 
     return m_bins,phi1d,err1d,w_bins,phi2d,err2d,warning
 
-def mfunc_analysis(lm_arr,w5_arr,ds_arr,lme_arr,w5e_arr,dse_arr,
+def mfunc_analysis(lm_arr,w5_arr,ds_arr,fl_arr,fle_arr,w5e_arr,dse_arr,
                    mask_all,v_survey_all,masks_jk,v_survey_jk,nsims_ms=100,
                    m_range=[6.,11.],m_nbins=25,m_rs=10,
                    w_range=[1.2,3.],w_nbins=18,w_rs=10,
@@ -141,12 +148,14 @@ def mfunc_analysis(lm_arr,w5_arr,ds_arr,lme_arr,w5e_arr,dse_arr,
     if verbose>0 :
         print "  Computing measurement errors"
     phi1d_ms=np.zeros([nsims_ms,len(phi1d)])
+    lm_rc=np.log10(2.356E5*ds_arr**2*fl_arr)
     for i in np.arange(nsims_ms) :
         if verbose>1 :
             print i
-        lmhib=lm_arr[mask_all]+np.random.randn(ngals_good)*lme_arr[mask_all]
-        lw50b=np.log10(np.fabs(w5_arr[mask_all]+np.random.randn(ngals_good)*w5e_arr[mask_all]))
+        fluxb=fl_arr[mask_all]+np.random.randn(ngals_good)*fle_arr[mask_all]
         distb=ds_arr[mask_all]+np.random.randn(ngals_good)*dse_arr[mask_all]
+        lmhib=lm_arr[mask_all]+np.log10(np.fabs(2.356E5*distb**2*fluxb))-lm_rc[mask_all]
+        lw50b=np.log10(np.fabs(w5_arr[mask_all]+np.random.randn(ngals_good)*w5e_arr[mask_all]))
         mb,p1d,e1d,wb,p2d,e2d,wrn=get_mfunc(lmhib,lw50b,distb,v_survey_all,
                                             m_range=m_range,m_nbins=m_nbins,m_rs=m_rs,
                                             w_range=w_range,w_nbins=w_nbins,w_rs=w_rs,

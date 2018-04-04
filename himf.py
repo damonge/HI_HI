@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from swml import mfunc_analysis,det_test_code1,det_test_code12
 import os
 
+np.random.seed(6789)
+
 #Boxes defining each region in the a.100 sample (first interval is dec, second is RA)
 boxes_spring=np.array([[[ 0.,4.],[7.7,16.5]],
                        [[ 4.,8.],[7.7,16.5]],
@@ -111,19 +113,12 @@ def mf_group(grps,dcode=2,verbose=0) :
 
     print ' %d groups, %d HI sources'%(len(grps),len(d_full))
     
-    #Determine completeness for each galaxy
-    if dcode==1 :
-        fcomp=det_test_code1
-    else :
-        fcomp=det_test_code12
-    good_comp=fcomp(d_full['loghimass'],np.log10(d_full['w50']),d_full['dist'])>0
-
     #Select by detection code
     good_det=d_full['detcode']<=dcode
     #High redshift cut
     good_vel=d_full['vcmb']<=15000.
     #Full set of cuts
-    good_gals=good_vel*good_det*good_comp
+    good_gals=good_vel*good_det
     #Total survey volume (sum of group volumes) including volume correction
     vsurvey=np.sum([g['area']*4*np.pi*(g['r180L']/0.7)**3/3 for g in grps])
     #Total volume occupied by the groups (without volume correction)
@@ -149,12 +144,12 @@ def mf_group(grps,dcode=2,verbose=0) :
     for i in np.arange(n_jk) :
         mask=np.arange(n_jk)!=i
         good_range_jk=in_boxes(d_full['HIra'],d_full['HIdec'],[boxes_jk_grp[mask]])
-        good_gals_jk.append(good_range_jk*good_vel*good_det*good_comp)
+        good_gals_jk.append(good_range_jk*good_vel*good_det)
         vsurvey_jk.append(vsurvey*sum(good_range_jk)/(len(d_full)+0.))
 
     #Get mass function
     res_grps=mfunc_analysis(d_full['loghimass'],d_full['w50'],d_full['dist'],
-                            0*d_full['loghimasserr'],0*d_full['werr'],0*d_full['disterr'], #I've switched off measurement errors for now
+                            d_full['flux'],d_full['fluxerr'],0*d_full['werr'],d_full['disterr'],
                             good_gals,vsurvey,good_gals_jk,vsurvey_jk,nsims_ms=100,dcode=dcode,
                             m_range=m_range,m_nbins=m_nbins,m_rs=10,
                             w_range=w_range,w_nbins=w_nbins,w_rs=10,
@@ -171,13 +166,6 @@ def mf_all(d,dcode=1,verbose=1) :
     verbose = output level (0-nothing, 1-main steps, >1-detailed)
     '''
 
-    #Determine completeness for each galaxy
-    if dcode==1 :
-        fcomp=det_test_code1
-    else :
-        fcomp=det_test_code12
-    good_comp=fcomp(d['loghimass'],np.log10(d['w50']),d['dist'])>0
-    
     #Select by detection code
     good_det=d['detcode']<=dcode
     #High redshift cut
@@ -190,7 +178,7 @@ def mf_all(d,dcode=1,verbose=1) :
     #Select galaxies in footprint
     good_range=in_boxes(d['HIra'],d['HIdec'])
     #Full set of cuts
-    good_gals=good_vel*good_det*good_range*good_comp
+    good_gals=good_vel*good_det*good_range
     ngals_good=np.sum(good_gals)
     rmin=np.amin(d['dist'][good_gals]); rmax=np.amax(d['dist'][good_gals]);
     #Total survey volume
@@ -203,7 +191,7 @@ def mf_all(d,dcode=1,verbose=1) :
     for i in np.arange(n_jk) :
         mask=np.arange(n_jk)!=i
         good_range_jk=in_boxes(d['HIra'],d['HIdec'],[sbb[mask]])
-        good_gals_jk.append(good_vel*good_det*good_comp*good_range_jk)
+        good_gals_jk.append(good_vel*good_det*good_range_jk)
         rmin=np.amin(d['dist'][good_gals_jk[i]]); rmax=np.amax(d['dist'][good_gals_jk[i]]);
         v_survey_jk.append(survey_area([sbb[mask]])*(rmax**3-rmin**3)/3.)
         if verbose>1 :
@@ -211,7 +199,7 @@ def mf_all(d,dcode=1,verbose=1) :
 
     #Get mass function
     res_a100=mfunc_analysis(d['loghimass'],d['w50'],d['dist'],
-                            d['loghimasserr'],d['werr'],d['disterr'],
+                            d['flux'],d['fluxerr'],0*d['werr'],d['disterr'],
                             good_gals,v_survey,good_gals_jk,
                             v_survey_jk,nsims_ms=100,m_rs=10,w_rs=10,
                             dcode=dcode,verbose=verbose)
@@ -220,13 +208,14 @@ def mf_all(d,dcode=1,verbose=1) :
 
 #Run parameters:
 nbins_Mh=7 #Number of halo mass bins
-mh_type='M' #Halo mass estimate (L or M)
-bin_type='eq' #Use linear M_h bins ('lin')? Or equal-number M_h bins ('eq')?
+mh_type='L' #Halo mass estimate (L or M)
+bin_type='lin' #Use linear M_h bins ('lin')? Or equal-number M_h bins ('eq')?
 compute_full_mf=False #Compute also full sample HIMF?
 
 #Read full dataset
 data=(fits.open("data_70/data_a100.fits"))[1].data
 data['HIra'][data['HIra']>300]-=360. #Wrap right ascension around longitude 0 to avoid cut
+goodid=np.where(data['flux']>0)[0]; data=data[goodid]
 
 #Read group data
 data_groups=np.genfromtxt('data_70/a70_HI_group_mh12.5_ngal2.dat',names=True,dtype=None)
@@ -282,7 +271,8 @@ for n,i_d in enumerate(np.unique(data_groups['groupid'])) :
     hiids=data_groups['AGCNr'][index_groups]
     id_gals=np.in1d(data['AGCNr'],hiids)
     vcmb=np.amax(data['vcmb'][id_gals])
-    groups.append({'mL':mL,'mM':mM,'r180L':r180L,'ng':len(hiids),'area':area,'vcmb':vcmb,'gals':data[id_gals]})
+    groups.append({'mL':mL,'mM':mM,'r180L':r180L,'ng':len(hiids),'area':area,
+                   'vcmb':vcmb,'gals':data[id_gals]})
     mMarr.append(mM)
     mLarr.append(mL)
     r180Larr.append(r180L)
